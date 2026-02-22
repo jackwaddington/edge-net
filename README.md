@@ -1,4 +1,4 @@
-# edge-net
+# Edge-NET
 
 A self-contained wireless edge network built from Raspberry Pi hardware, running on an OpenBSD router with pf packet filtering. Nodes communicate over a dedicated WiFi network — no internet required — using MQTT as the message bus.
 
@@ -13,6 +13,8 @@ Designed as a portable demo: plug in power and everything talks to each other. P
 | [edge-net-keybow](https://github.com/jackwaddington/edge-net-keybow) | Pi Zero · Keybow 3-key | 3 buttons that publish MQTT messages |
 | [edge-net-plasma](https://github.com/jackwaddington/edge-net-plasma) | Plasma Stick 2040W | LED strip controlled via MQTT |
 | [edge-net-automation](https://github.com/jackwaddington/edge-net-automation) | Pi 3A · Automation Hat | Relay control, graceful shutdown of nodes |
+
+![Edge-NET hardware](assets/hardware.jpg)
 
 ## Architecture
 
@@ -45,10 +47,10 @@ When running standalone (no ethernet): all inter-node MQTT communication works n
 Mosquitto runs on the hub and acts as the broker for all node communication. Nodes publish to topics and subscribe to topics to react to each other.
 
 Example flows:
+
 - Keybow button press → MQTT publish → Plasma Stick changes LED pattern
 - Keybow button press → MQTT publish → GFX hat updates its display
 - Automation hat receives MQTT command → SSH shutdown → relay cuts power
-
 
 ## Status
 
