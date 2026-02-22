@@ -4,6 +4,8 @@ A self-contained wireless edge network built from Raspberry Pi hardware, running
 
 Designed as a portable demo: plug in power and everything talks to each other. Plug in an ethernet cable and additional features unlock (Prometheus/Grafana monitoring on the home network).
 
+This is a really interesting project because it is so configurable. It ties together many pieces — programming, embedded, networking, infrastructure, system design and so forth. This follows on from an earlier exploration with [jWorld](https://github.com/jackwaddington/jWorld).
+
 ## Nodes
 
 | Repo | Hardware | Role |
