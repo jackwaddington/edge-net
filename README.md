@@ -10,11 +10,11 @@ This is a really interesting project because it is so configurable. It ties toge
 
 | Repo | Hardware | Role |
 | ---- | -------- | ---- |
-| [edge-net-hub](https://github.com/jackwaddington/edge-net-hub) | Raspberry Pi 4 · OpenBSD | Router, firewall (pf), WiFi AP, MQTT broker |
-| [edge-net-gfx](https://github.com/jackwaddington/edge-net-gfx) | Pi Pico W · Pimoroni GFX Hat | MQTT subscriber, drives a small display |
-| [edge-net-keybow](https://github.com/jackwaddington/edge-net-keybow) | Pi Zero · Keybow 3-key | 3 buttons that publish MQTT messages |
-| [edge-net-plasma](https://github.com/jackwaddington/edge-net-plasma) | Plasma Stick 2040W | LED strip controlled via MQTT |
-| [edge-net-automation](https://github.com/jackwaddington/edge-net-automation) | Pi 3A · Automation Hat | Relay control, graceful shutdown of nodes |
+| [edge-net-hub](https://github.com/jackwaddington/edge-net-hub) | [Raspberry Pi 4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/specifications/) · [OpenBSD](https://www.openbsd.org/) | Router, firewall (pf), WiFi AP, MQTT broker |
+| [edge-net-gfx](https://github.com/jackwaddington/edge-net-gfx) | [Pi Pico W](https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html) · [GFX Pack](https://shop.pimoroni.com/products/pico-gfx-pack) | MQTT subscriber, drives a small display |
+| [edge-net-keybow](https://github.com/jackwaddington/edge-net-keybow) | [Pi Zero W](https://www.raspberrypi.com/products/raspberry-pi-zero-w/) · [Keybow Mini](https://shop.pimoroni.com/products/keybow-mini-3-key-macro-pad-kit) | 3 buttons that publish MQTT messages |
+| [edge-net-plasma](https://github.com/jackwaddington/edge-net-plasma) | [Plasma Stick 2040W](https://shop.pimoroni.com/products/plasma-stick-2040-w) | LED strip controlled via MQTT |
+| [edge-net-automation](https://github.com/jackwaddington/edge-net-automation) | [Pi 3A](https://www.raspberrypi.com/products/raspberry-pi-3-model-a-plus/) · [Automation Hat](https://shop.pimoroni.com/products/automation-hat) | Relay control, graceful shutdown of nodes |
 
 ![Edge-NET hardware](assets/hardware.jpg)
 
