@@ -54,6 +54,17 @@ Example flows:
 - Keybow button press → MQTT publish → GFX hat updates its display
 - Automation hat receives MQTT command → SSH shutdown → relay cuts power
 
+## Applications
+
+The GFX display and Keybow buttons together form a small interactive terminal on the network. The GFX Pack has five buttons — one reserved for back/home, four for controlling the current app. Planned apps:
+
+| App | Description |
+| --- | ----------- |
+| Moped | Live data from [moped](https://github.com/jackwaddington/moped) displayed on screen |
+| Chess clock | Two-player chess clock using the buttons and GFX display |
+| Timelapse | Status and latest frame from the timelapse camera via Grafana |
+| k3s | Cluster health from the home k3s setup |
+
 ## Status
 
 Early stage — hardware in hand, repos being built out per node.
