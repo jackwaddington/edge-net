@@ -15,6 +15,7 @@ This is a really interesting project because it is so configurable. It ties toge
 | [edge-net-keybow](https://github.com/jackwaddington/edge-net-keybow) | [Pi Zero W](https://www.raspberrypi.com/products/raspberry-pi-zero-w/) · [Keybow Mini](https://shop.pimoroni.com/products/keybow-mini-3-key-macro-pad-kit) | 3 buttons that publish MQTT messages |
 | [edge-net-plasma](https://github.com/jackwaddington/edge-net-plasma) | [Plasma Stick 2040W](https://shop.pimoroni.com/products/plasma-stick-2040-w) | LED strip controlled via MQTT |
 | [edge-net-automation](https://github.com/jackwaddington/edge-net-automation) | [Pi 3A](https://www.raspberrypi.com/products/raspberry-pi-3-model-a-plus/) · [Automation Hat](https://shop.pimoroni.com/products/automation-hat) | Relay control, graceful shutdown of nodes |
+| [edge-net-kindle](https://github.com/jackwaddington/edge-net-kindle) | [Kindle 4](https://en.wikipedia.org/wiki/Amazon_Kindle#Kindle_4) | Jailbroken ambient e-ink display, shows weather and task state |
 
 ![Edge-NET hardware](assets/hardware.jpg)
 
