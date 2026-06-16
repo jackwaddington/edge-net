@@ -6,6 +6,8 @@ Designed as a portable demo: plug in power and everything talks to each other. P
 
 This is a really interesting project because it is so configurable. It ties together many pieces — programming, embedded, networking, infrastructure, system design and so forth. This follows on from an earlier exploration with [jWorld](https://github.com/jackwaddington/jWorld).
 
+The system is built around a clear philosophy — **capability over device**, dumb nodes under a smart edge, the house itself as the interface. See [PRINCIPLES.md](PRINCIPLES.md).
+
 ## Nodes
 
 | Repo | Hardware | Role |
@@ -16,6 +18,7 @@ This is a really interesting project because it is so configurable. It ties toge
 | [edge-net-plasma](https://github.com/jackwaddington/edge-net-plasma) | [Plasma Stick 2040W](https://shop.pimoroni.com/products/plasma-stick-2040-w) | LED strip controlled via MQTT |
 | [edge-net-automation](https://github.com/jackwaddington/edge-net-automation) | [Pi 3A](https://www.raspberrypi.com/products/raspberry-pi-3-model-a-plus/) · [Automation Hat](https://shop.pimoroni.com/products/automation-hat) | Relay control, graceful shutdown of nodes |
 | [edge-net-kindle](https://github.com/jackwaddington/edge-net-kindle) | [Kindle 4](https://en.wikipedia.org/wiki/Amazon_Kindle#Kindle_4) | Jailbroken ambient e-ink display, shows weather and task state |
+| [edge-net-inky](https://github.com/jackwaddington/edge-net-inky) | [Pi Pico W](https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html) · [Inky Pack](https://shop.pimoroni.com/products/pico-inky-pack) | Battery e-ink panel, 3 buttons — wakes, pulls state, sleeps |
 
 ![Edge-NET hardware](assets/hardware.jpg)
 

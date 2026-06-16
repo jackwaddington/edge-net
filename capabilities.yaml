@@ -229,6 +229,32 @@ nodes:
       a PNG (task state, node health, weather). Calm by default, escalates only
       when something needs attention. Physical buttons available but unused.
 
+  - id: inky
+    repo: edge-net-inky
+    hardware: Pi Pico W + Pimoroni Inky Pack (2.9" mono e-ink, 296x128, 3 buttons A/B/C)
+    os: MicroPython
+    state: scaffold
+    location: null
+    network: { ip: null, ip_status: dynamic, class: microcontroller, transport: "WiFi, MQTT and/or HTTP pull" }
+    inputs:
+      - { name: buttons, kind: buttons, detail: "3 tactile buttons A/B/C alongside the panel" }
+    outputs: []
+    displays:
+      - name: eink
+        kind: eink_mono
+        resolution: 296x128
+        capabilities: [render_png, text, images, graphs, ambient_dashboard]
+        method: render on home network and push image, or draw on-device with Pimoroni libs
+    mqtt:
+      publishes: [edge-net/inky/button/a, edge-net/inky/button/b, edge-net/inky/button/c]
+      subscribes: [edge-net/inky/display]
+    notes: >
+      Battery-capable e-ink with onboard buttons and a Pico W. Unlike the Kindle
+      (always-on, off-device PNG render), this can deep-sleep for weeks: wake on
+      timer, pull latest state, redraw, sleep. Slow refresh — calm static state,
+      not live motion. Keep firmware a dumb image/spec sink to avoid reflashing
+      on every layout change. Topics proposed.
+
 # ── Interaction primitives (for the brainstorm agent) ─────────────────────────
 # Distilled "what can this network actually do" without a phone or screen:
 interaction_primitives:
