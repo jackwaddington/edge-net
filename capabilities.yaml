@@ -1,0 +1,279 @@
+# Edge-NET capability catalog
+#
+# Machine-readable inventory of every node, its inputs, outputs, displays,
+# MQTT topics, and network identity. Intended to be handed to an agent to
+# brainstorm applications — what to build, where devices live, how to interact
+# with data without a phone or screen.
+#
+# Conventions:
+#   - MQTT topics namespaced edge-net/<node>/<...>
+#   - ip_status: "leased" = real dhcpd lease; "dynamic" = DHCP range, no fixed
+#     IP needed (MQTT-only nodes); "fixed_when_built" = will need a pinned IP
+#     because pf or SSH singles it out; "infra" = the hub itself.
+#   - location: physical placement in the house. null = TBD (a brainstorm input).
+#   - state: "built" = working code; "scaffold" = partial; "stub" = README only.
+
+schema_version: 1
+updated: 2026-06-16
+
+network:
+  subnet: 10.1.1.0/24
+  gateway: 10.1.1.1        # the hub
+  mqtt_broker:
+    host: 10.1.1.1
+    port: 1883
+    transport: WiFi (bwfm0 AP), no internet required
+  uplink:
+    interface: bse0 (ethernet, optional)
+    when_present: NAT out to home network; unlocks Grafana/Prometheus
+    home_grafana: 192.168.0.216  # ports 3000 (Grafana), 9090 (Prometheus)
+  pf_groups:
+    linux_nodes: [10.1.1.10, 10.1.1.11]
+    mcu_nodes:   [10.1.1.20, 10.1.1.21]
+  ip_strategy: >
+    MQTT-only nodes need no fixed IP — they reach the broker at 10.1.1.1:1883
+    via the open WiFi-net rule. Pin an IP (dhcpd host block, needs MAC) only
+    when pf must single a node out (today: GFX -> Grafana) or for reliable
+    SSH/Ansible. Collect MACs lazily, per node, when that need arises.
+  notes:
+    - Only GFX (10.1.1.20) is currently allowed through pf to home Grafana.
+    - Firewall is default-deny; per-node reachability is explicit in pf.conf.
+    - Open question — remote fleet access (e.g. balena.io) for managing nodes
+      through the firewall without per-node SSH. Not yet implemented.
+
+nodes:
+  - id: hub
+    repo: edge-net-hub
+    hardware: Raspberry Pi 4 (1GB)
+    os: OpenBSD
+    state: built
+    location: null
+    network: { ip: 10.1.1.1, ip_status: infra, class: infra }
+    role: Router, firewall (pf), WiFi AP (hostap), DHCP, MQTT broker (Mosquitto)
+    inputs: []
+    outputs: []
+    displays: []
+    mqtt: { publishes: [], subscribes: [] }
+    notes: The substrate. Every other node hangs off this.
+
+  - id: keybow
+    repo: edge-net-keybow
+    hardware: Raspberry Pi Zero W + Keybow Mini (3-key)
+    os: Raspberry Pi OS (Python)
+    state: built
+    location: null
+    network: { ip: 10.1.1.10, ip_status: leased, mac: "b8:27:eb:28:2d:8e", class: linux }
+    inputs:
+      - { name: button_0, kind: button, gpio: 17, mqtt_pub: edge-net/keybow/button/0, payload: press }
+      - { name: button_1, kind: button, gpio: 22, mqtt_pub: edge-net/keybow/button/1, payload: press }
+      - { name: button_2, kind: button, gpio: 6,  mqtt_pub: edge-net/keybow/button/2, payload: press }
+    outputs:
+      - { name: led_0, kind: rgb_led, driver: APA102/SPI, mqtt_sub: edge-net/keybow/led/0, payload: "r,g,b" }
+      - { name: led_1, kind: rgb_led, driver: APA102/SPI, mqtt_sub: edge-net/keybow/led/1, payload: "r,g,b" }
+      - { name: led_2, kind: rgb_led, driver: APA102/SPI, mqtt_sub: edge-net/keybow/led/2, payload: "r,g,b" }
+    displays: []
+    mqtt:
+      publishes: [edge-net/keybow/button/0, edge-net/keybow/button/1, edge-net/keybow/button/2]
+      subscribes: [edge-net/keybow/led/0, edge-net/keybow/led/1, edge-net/keybow/led/2]
+    notes: >
+      Two-way per key — light a button to signal "needs attention", press
+      sends the response. Full Linux, SSH-accessible. Strongest fit for
+      logging discrete events (e.g. a button per household task).
+
+  - id: gfx
+    repo: edge-net-gfx
+    hardware: Raspberry Pi Pico W + Pimoroni GFX Pack
+    os: MicroPython
+    state: stub
+    location: null
+    network: { ip: 10.1.1.20, ip_status: fixed_when_built, class: mcu }
+    inputs:
+      - { name: button_a, kind: button, role: app, mqtt_pub: edge-net/gfx/button/a, payload: press }
+      - { name: button_b, kind: button, role: app, mqtt_pub: edge-net/gfx/button/b, payload: press }
+      - { name: button_c, kind: button, role: app, mqtt_pub: edge-net/gfx/button/c, payload: press }
+      - { name: button_d, kind: button, role: app, mqtt_pub: edge-net/gfx/button/d, payload: press }
+      - { name: button_e, kind: button, role: back/home, mqtt_pub: edge-net/gfx/button/e, payload: press }
+    outputs:
+      - { name: backlight, kind: rgb_backlight, detail: "RGB LCD backlight, colour as ambient signal" }
+    displays:
+      - name: lcd
+        kind: monochrome_lcd
+        resolution: 128x64
+        capabilities: [text, graphics, graphs, sparklines, menus, status_screens]
+        mqtt_sub: edge-net/gfx/display
+    mqtt:
+      publishes: [edge-net/gfx/button/a, edge-net/gfx/button/b, edge-net/gfx/button/c, edge-net/gfx/button/d, edge-net/gfx/button/e]
+      subscribes: [edge-net/gfx/display]
+    notes: >
+      Five buttons + small graphical display = the interactive terminal of the
+      network. Only node firewalled through to home Grafana/Prometheus. Planned
+      apps: moped live data, chess clock, timelapse, k3s health. Topics are
+      proposed (README is a stub).
+
+  - id: plasma
+    repo: edge-net-plasma
+    hardware: Pimoroni Plasma Stick 2040W
+    os: MicroPython
+    state: future
+    location: null
+    network: { ip: null, ip_status: dynamic, class: mcu }
+    inputs: []
+    outputs:
+      - name: led_strip
+        kind: addressable_rgb
+        detail: WS2812 / NeoPixel, ~50 LEDs on GP15
+        capabilities: [solid_colour, patterns, brightness, per_pixel, foldable_to_grid_10x5]
+        mqtt_sub: edge-net/plasma/led
+    displays: []
+    mqtt:
+      publishes: []
+      subscribes: [edge-net/plasma/led]
+    notes: >
+      FUTURE — second Plasma Stick (spare). For now the active LED strip lives
+      on the gamepad board (dual role). Stand this up as a standalone ambient
+      node only when a second independent strip is wanted. 50-LED strip can fold
+      to a 10x5 pixel grid for text.
+
+  - id: gamepad
+    repo: edge-net-gamepad
+    hardware: Adafruit Mini I2C Gamepad (seesaw) on Plasma Stick 2040W host
+    os: CircuitPython
+    state: scaffold
+    location: null
+    network: { ip: null, ip_status: dynamic, class: mcu }
+    host_board: Plasma Stick 2040W (Pico W) — provides WiFi, CPU, and the LED strip
+    inputs:
+      - { name: button_a,      kind: button,   seesaw_pin: 5,  mqtt_pub: edge-net/gamepad/button/a,      payload: press/release }
+      - { name: button_b,      kind: button,   seesaw_pin: 1,  mqtt_pub: edge-net/gamepad/button/b,      payload: press/release }
+      - { name: button_x,      kind: button,   seesaw_pin: 6,  mqtt_pub: edge-net/gamepad/button/x,      payload: press/release }
+      - { name: button_y,      kind: button,   seesaw_pin: 2,  mqtt_pub: edge-net/gamepad/button/y,      payload: press/release }
+      - { name: button_start,  kind: button,   seesaw_pin: 16, mqtt_pub: edge-net/gamepad/button/start,  payload: press/release }
+      - { name: button_select, kind: button,   seesaw_pin: 0,  mqtt_pub: edge-net/gamepad/button/select, payload: press/release }
+      - { name: joystick_x,    kind: analog_axis, adc: 14, range: "0-1023", centre: 512, deadzone: 80, mqtt_pub: edge-net/gamepad/axis/x }
+      - { name: joystick_y,    kind: analog_axis, adc: 15, range: "0-1023", centre: 512, deadzone: 80, mqtt_pub: edge-net/gamepad/axis/y }
+    outputs:
+      - { name: led_strip, kind: addressable_rgb, detail: "shared 50-LED strip, local feedback", mqtt_sub: edge-net/gamepad/led }
+    displays: []
+    mqtt:
+      publishes:
+        - edge-net/gamepad/button/a
+        - edge-net/gamepad/button/b
+        - edge-net/gamepad/button/x
+        - edge-net/gamepad/button/y
+        - edge-net/gamepad/button/start
+        - edge-net/gamepad/button/select
+        - edge-net/gamepad/axis/x
+        - edge-net/gamepad/axis/y
+      subscribes: [edge-net/gamepad/led, edge-net/gamepad/led/clear]
+    notes: >
+      Richest input surface on the network — analog stick + 6 buttons. The
+      natural universal remote / navigation device. Dual role: the gamepad is a
+      dumb I2C device; the Plasma Stick reads it, publishes over its own WiFi,
+      and drives the shared LED strip. One board, one connection, two jobs.
+      Portable — move the gamepad to any WiFi+I2C host and only config changes.
+
+  - id: automation
+    repo: edge-net-automation
+    hardware: Raspberry Pi 3A + Pimoroni Automation Hat
+    os: Raspberry Pi OS (Python)
+    state: stub
+    location: null
+    network: { ip: 10.1.1.11, ip_status: fixed_when_built, class: linux }
+    inputs:
+      - { name: adc_1, kind: adc, detail: "12-bit, 0-24V" }
+      - { name: adc_2, kind: adc, detail: "12-bit, 0-24V" }
+      - { name: adc_3, kind: adc, detail: "12-bit, 0-24V" }
+      - { name: adc_lv, kind: adc, detail: "12-bit, 0-3.3V" }
+      - { name: input_1, kind: buffered_input, detail: "24V tolerant" }
+      - { name: input_2, kind: buffered_input, detail: "24V tolerant" }
+      - { name: input_3, kind: buffered_input, detail: "24V tolerant" }
+    outputs:
+      - { name: relay_1, kind: relay, detail: "24V @ 2A, NC+NO", mqtt_sub: edge-net/automation/relay/1 }
+      - { name: relay_2, kind: relay, detail: "24V @ 2A, NC+NO", mqtt_sub: edge-net/automation/relay/2 }
+      - { name: relay_3, kind: relay, detail: "24V @ 2A, NC+NO", mqtt_sub: edge-net/automation/relay/3 }
+      - { name: sink_1, kind: sinking_output, detail: "24V tolerant" }
+      - { name: sink_2, kind: sinking_output, detail: "24V tolerant" }
+      - { name: sink_3, kind: sinking_output, detail: "24V tolerant" }
+    displays:
+      - { name: channel_leds, kind: indicator_leds, detail: "15 channel + power/comms/warn" }
+    mqtt:
+      publishes: []
+      subscribes: [edge-net/automation/relay/1, edge-net/automation/relay/2, edge-net/automation/relay/3]
+    notes: >
+      Richest physical IO, least built. Switches mains/low-voltage loads.
+      Also orchestrates graceful shutdown: SSH into a node, halt, cut power
+      via relay. Topics proposed.
+
+  - id: kindle
+    repo: edge-net-kindle
+    hardware: Kindle 4 (jailbroken, firmware 4.1.4, no backlight)
+    os: Kindle Linux (Python, eips, lipc)
+    state: scaffold
+    location: null
+    network: { ip: null, ip_status: dynamic, class: linux, transport: "WiFi, polls HTTP not MQTT" }
+    inputs:
+      - { name: dpad, kind: buttons, detail: "d-pad directions, via lipc/evdev, currently unused" }
+      - { name: page_turn, kind: buttons, detail: "left/right page buttons, via lipc/evdev, currently unused" }
+    outputs: []
+    displays:
+      - name: eink
+        kind: eink_grayscale
+        resolution: 600x800
+        capabilities: [render_png, text, images, ambient_dashboard]
+        method: polls a home-network HTTP server for a PNG, renders with `eips -g`
+    mqtt:
+      publishes: []
+      subscribes: []
+    notes: >
+      Ambient output, not on the MQTT bus — polls an HTTP server that generates
+      a PNG (task state, node health, weather). Calm by default, escalates only
+      when something needs attention. Physical buttons available but unused.
+
+# ── Interaction primitives (for the brainstorm agent) ─────────────────────────
+# Distilled "what can this network actually do" without a phone or screen:
+interaction_primitives:
+  discrete_input:
+    - "3 Keybow buttons (with per-button RGB feedback)"
+    - "6 gamepad buttons"
+    - "5 GFX buttons"
+    - "Kindle d-pad + page-turn (unused)"
+    - "3 Automation Hat buffered inputs (e.g. reed switch on a cupboard)"
+  continuous_input:
+    - "gamepad analog joystick (2 axes)"
+    - "4 Automation Hat ADC channels (sensors, dials)"
+  ambient_output:
+    - "50-LED RGB strip (plasma/gamepad) — colour, pattern, or 10x5 text grid"
+    - "3 Keybow RGB LEDs — per-task status lights"
+    - "GFX RGB backlight — room-glance colour"
+    - "15 Automation Hat channel LEDs"
+  rich_output:
+    - "GFX 128x64 LCD — graphs, menus, live data"
+    - "Kindle 600x800 e-ink — calm ambient dashboard"
+  physical_actuation:
+    - "3 Automation Hat relays (24V @ 2A) — switch a lamp, fan, socket, latch"
+  data_sinks:
+    - "Postgres on home network (via uplink) — log events, timestamps"
+    - "Grafana/Prometheus (GFX can read back)"
+
+# ── External resources (home network, optional) ───────────────────────────────
+# Not part of Edge-NET itself. Reachable only when the ethernet uplink is present
+# and pf permits it. Edge-NET works standalone without these; they unlock the
+# "smart" / persistent / analytical layer. Listed so the brainstorm knows they
+# exist — not a requirement.
+external_resources:
+  database:
+    host: db-01 (on pve1)
+    stack: PostgreSQL + pgvector + Apache AGE (graph) + Redis
+    reach: home network via uplink + pf
+    use: persist events (task logs, timestamps), state, vectors, graph relations
+  llm_router:
+    name: LiteLLM
+    routes_to: [Ollama GPU (Gaming PC), Ollama CPU (Mac Mini), Anthropic API, OpenAI API]
+    reach: home network via uplink
+    use: >
+      local/cloud inference for an "intent engine" — decide what nodes should
+      reflect, generate device config or code. See edge-net PLANNING.md.
+  monitoring:
+    stack: Grafana + Prometheus
+    host: k3s (192.168.0.216)
+    use: GFX can pull and display cluster/timelapse/metrics data
