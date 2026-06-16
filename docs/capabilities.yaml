@@ -64,9 +64,9 @@ nodes:
     location: null
     network: { ip: 10.1.1.10, ip_status: leased, mac: "b8:27:eb:28:2d:8e", class: linux }
     inputs:
-      - { name: button_0, kind: button, gpio: 17, mqtt_pub: edge-net/keybow/button/0, payload: press }
-      - { name: button_1, kind: button, gpio: 22, mqtt_pub: edge-net/keybow/button/1, payload: press }
-      - { name: button_2, kind: button, gpio: 6,  mqtt_pub: edge-net/keybow/button/2, payload: press }
+      - { name: button_0, kind: button, gpio: 17, mqtt_pub: edge-net/keybow/button/0, payload: press/release }
+      - { name: button_1, kind: button, gpio: 22, mqtt_pub: edge-net/keybow/button/1, payload: press/release }
+      - { name: button_2, kind: button, gpio: 6,  mqtt_pub: edge-net/keybow/button/2, payload: press/release }
     outputs:
       - { name: led_0, kind: rgb_led, driver: APA102/SPI, mqtt_sub: edge-net/keybow/led/0, payload: "r,g,b" }
       - { name: led_1, kind: rgb_led, driver: APA102/SPI, mqtt_sub: edge-net/keybow/led/1, payload: "r,g,b" }
@@ -88,11 +88,11 @@ nodes:
     location: null
     network: { ip: 10.1.1.20, ip_status: fixed_when_built, class: mcu }
     inputs:
-      - { name: button_a, kind: button, role: app, mqtt_pub: edge-net/gfx/button/a, payload: press }
-      - { name: button_b, kind: button, role: app, mqtt_pub: edge-net/gfx/button/b, payload: press }
-      - { name: button_c, kind: button, role: app, mqtt_pub: edge-net/gfx/button/c, payload: press }
-      - { name: button_d, kind: button, role: app, mqtt_pub: edge-net/gfx/button/d, payload: press }
-      - { name: button_e, kind: button, role: back/home, mqtt_pub: edge-net/gfx/button/e, payload: press }
+      - { name: button_a, kind: button, role: app, mqtt_pub: edge-net/gfx/button/a, payload: press/release }
+      - { name: button_b, kind: button, role: app, mqtt_pub: edge-net/gfx/button/b, payload: press/release }
+      - { name: button_c, kind: button, role: app, mqtt_pub: edge-net/gfx/button/c, payload: press/release }
+      - { name: button_d, kind: button, role: app, mqtt_pub: edge-net/gfx/button/d, payload: press/release }
+      - { name: button_e, kind: button, role: back/home, mqtt_pub: edge-net/gfx/button/e, payload: press/release }
     outputs:
       - { name: backlight, kind: rgb_backlight, detail: "RGB LCD backlight, colour as ambient signal" }
     displays:

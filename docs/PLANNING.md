@@ -87,7 +87,14 @@ Not a node on its own — an application that runs across several nodes.
 
 ---
 
-## AI Intent Engine — Dynamic Behavior Layer
+> **Status (2026-06-16): deferred.** There is no engine. The current stage is
+> getting every node on the network and defining its **MQTT contract** — what it
+> publishes (inputs) and subscribes to (outputs), decoupled, with no hardcoded
+> "meaning" welded into firmware. The compute/brain layer below slots into that
+> seam later with zero node changes. We are defining the *vocabulary*, not the
+> *thinking*.
+
+## AI Intent Engine — Dynamic Behavior Layer (deferred)
 
 The idea: a service on the home network uses a local LLM to decide what the nodes should be doing, rather than hardcoding that at design time. The open questions on nearly every node above ("what does the arrow point at?", "what does the Kindle display?", "what are the button mappings?") are all candidates for this layer to own.
 
