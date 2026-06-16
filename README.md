@@ -6,7 +6,7 @@ Designed as a portable demo: plug in power and everything talks to each other. P
 
 This is a really interesting project because it is so configurable. It ties together many pieces — programming, embedded, networking, infrastructure, system design and so forth. This follows on from an earlier exploration with [jWorld](https://github.com/jackwaddington/jWorld).
 
-The system is built around a clear philosophy — **capability over device**, dumb nodes under a smart edge, the house itself as the interface. See [PRINCIPLES.md](PRINCIPLES.md).
+The system is built around a clear philosophy — **capability over device**, dumb nodes under a smart edge, the house itself as the interface. See [PRINCIPLES.md](docs/PRINCIPLES.md). Design notes, planned nodes, and open questions live in [docs/](docs/).
 
 ## Nodes
 
