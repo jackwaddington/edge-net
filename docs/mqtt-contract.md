@@ -17,7 +17,9 @@ edge-net/<node>/<category>/<id>
 ```
 
 - `<node>` — the node name without the `edge-net-` repo prefix: `keybow`,
-  `gfx`, `plasma`, `automation`, `gamepad`, `kindle`, `inky`.
+  `gfx`, `plasma`, `automation`, `gamepad`, `kindle`, `inky`. The AV/media
+  nodes (`hk-avr365`, `sony-dn1080`, `lg-um7400`, `samsung-frame`) are
+  addressed by a **capability alias**, not their repo name — see D7.
 - `<category>` — the kind of IO: `button`, `axis`, `led`, `relay`, `display`,
   `status`, …
 - `<id>` — which one: `0`, `a`, `x`, `relay/1`. Omitted where there's only one
@@ -160,3 +162,45 @@ topic's cost *and* unsensable → defer it. Cheap-and-honest ships; expensive-or
 theatre waits.
 
 (Existing nodes to align: Keybow and GFX currently emit `press` only.)
+
+## AV / media nodes (D7)
+
+AV receivers and TVs are a new node shape: **command-driven outputs with a rich
+verb set** (power, input, volume, surround, art). Two things make them distinct
+from the LED/relay/display outputs above.
+
+**Addressed by capability, not by box.** Per *capability over device*, the bus
+talks to `avr` and `tv`, not to `hk-avr365` or `sony-dn1080`. Multiple physical
+units can answer the same topic, and the edge fires one command regardless of
+which transport (RS-232 via Pico, IP, WebSocket) carries it:
+
+```text
+edge-net/avr/power   {"state": "on"}
+edge-net/avr/input   {"source": "dvd"}
+edge-net/avr/volume  {"level": 42}        # absolute where supported, else up/down
+edge-net/tv/art      {"state": "on", "image": "daily-render"}
+```
+
+When two units of one class run at once and must be steered independently, append
+an instance id (`edge-net/avr/sony/power`, `edge-net/avr/hk/power`); a single unit
+omits it. The repo name (`edge-net-sony-dn1080`) stays the catalogue of *what that
+box can do*; the topic stays the *capability* anyone can drive. The transport is
+the adapter's secret — exactly the MQTT boundary doing its job.
+
+**These outputs genuinely sense their own state — so `/state` is honest here.**
+D4a deferred the set/state split because an LED or relay can only echo its command
+(confirmation theatre). The network-native AV nodes are the opposite: their APIs
+**push notifications** on real state change — the user picks up the physical remote,
+the front panel turns a knob, the TV's motion sensor fires — and the box reports it.
+That is true sensing, so these nodes publish a retained `/state` reflecting *actual*
+device state, separate from the command topic:
+
+```text
+edge-net/avr/power   {"state": "on"}      # subscribe — command
+edge-net/avr/state   { ...actual power/input/volume... }   # publish — sensed, retained
+```
+
+Same test as release-events (D6) and the relay (D4a): build the richer contract
+**when the device truly senses**, not by category. The HK bridge only earns `/state`
+if its RxD line is wired to read the AVR's 48-byte status frames; until then it
+publishes presence (`/status` LWT) but no `/state`.
