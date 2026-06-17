@@ -67,6 +67,22 @@ The network runs self-contained with no internet. An ethernet uplink *unlocks*
 more — persistence (Postgres), intelligence (LLMs), metrics (Grafana) — but is
 never required for the core to work.
 
+## 10. Power strategy follows the power source
+
+How a node manages its radio and sleep is dictated by *how it's powered*, not a
+blanket policy.
+
+- **Mains nodes** (keybow, automation, GFX): stay responsive — WiFi power-save
+  **off**, always subscribed (push). Milliwatts are free; latency is what costs.
+- **Battery nodes** (Inky, future sensors): aggressive sleep — power-save on,
+  wake on a timer or event, pull state, sleep again. Every milliwatt is runtime.
+
+A neat consequence: a *local* input (a GPIO button edge) can wake the radio
+*before* the network round-trip, so even the first interaction after idle is
+snappy — the press doesn't need the radio, but it wakes it for the reply. That
+makes "responsive when used, dozing when idle" viable on battery nodes without a
+laggy first touch.
+
 ---
 
 **Test for any new idea:** does it express a *concern* across the fabric, or does
