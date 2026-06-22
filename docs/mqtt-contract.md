@@ -163,7 +163,28 @@ theatre waits.
 
 (Existing nodes to align: Keybow and GFX currently emit `press` only.)
 
-## AV / media nodes (D7)
+## Hub audio (D7)
+
+The Pi 3A runs an audio service that plays sounds over its 3.5mm jack. Any node
+can trigger audio by publishing to `edge/hub/audio/play` — no firmware changes
+needed on the triggering node.
+
+```text
+edge/hub/audio/play   {"file": "chime.wav"}          # play a sound file
+edge/hub/audio/play   {"tts": "motion detected"}     # speak text (espeak)
+edge/hub/audio/play   {"volume": 70}                 # set master volume 0–100
+edge/hub/audio/state  {"status": "playing", "source": "chime.wav"}  # pub, retained
+edge/hub/audio/state  {"status": "idle"}             # pub, retained
+```
+
+Sound files live at `/opt/edge-net/sounds/` on the Pi 3A. `chime.wav` is
+committed to `edge-net-automation` and deployed there. Messages queue — if two
+arrive at once they play in order, never overlapping.
+
+**Status: live** — `edge-net-automation/audio_service.py`, systemd unit
+`edge-net-audio.service`, verified 2026-06-22.
+
+## AV / media nodes (D8)
 
 AV receivers and TVs are a new node shape: **command-driven outputs with a rich
 verb set** (power, input, volume, surround, art). Two things make them distinct

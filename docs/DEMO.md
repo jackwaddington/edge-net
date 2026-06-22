@@ -56,6 +56,9 @@ liveness + reaction**, not a dead screen or a grey blip:
   playback. All rendering (text, 5×10 mapping, animation) lives off-device in a
   sender. Addressing + smooth flowing rainbow verified. This *is* the "make it
   look alive" piece, done the clean way.
+- ✅ **Hub audio** — Pi 3A plays WAV files and TTS over 3.5mm jack via MQTT.
+  Any node can trigger `{"file":"chime.wav"}` or `{"tts":"…"}`. Verified live
+  2026-06-22.
 - ⬜ Still wanted on top: an idle ambient glow + ripple (a sender behaviour now,
   not firmware), and folding the strip into a 5×10 matrix for scrolling text.
 
