@@ -208,26 +208,39 @@ nodes:
     repo: edge-net-kindle
     hardware: Kindle 4 (jailbroken, firmware 4.1.4, no backlight)
     os: Kindle Linux (Python, eips, lipc)
-    state: scaffold
+    state: built
     location: null
-    network: { ip: null, ip_status: dynamic, class: linux, transport: "WiFi, polls HTTP not MQTT" }
+    network: { ip: dynamic (home net 192.168.0.x), ip_status: dynamic, class: linux, transport: "WiFi, polls HTTP on home network" }
     inputs:
-      - { name: dpad, kind: buttons, detail: "d-pad directions, via lipc/evdev, currently unused" }
-      - { name: page_turn, kind: buttons, detail: "left/right page buttons, via lipc/evdev, currently unused" }
+      - { name: dpad, kind: buttons, detail: "up/down/left/right/select — lipc scancodes 193-197", mqtt_pub: "edge-net/kindle/button/<name>", payload: press }
+      - { name: page_turn, kind: buttons, detail: "page_back/page_fwd — lipc scancodes 104/109", mqtt_pub: "edge-net/kindle/button/<name>", payload: press }
+      - { name: misc, kind: buttons, detail: "menu/back/home — lipc scancodes 139/158/102", mqtt_pub: "edge-net/kindle/button/<name>", payload: press }
     outputs: []
     displays:
       - name: eink
         kind: eink_grayscale
         resolution: 600x800
         capabilities: [render_png, text, images, ambient_dashboard]
-        method: polls a home-network HTTP server for a PNG, renders with `eips -g`
+        method: "polls 192.168.0.62:8080/kindle/display.png every 5 min, renders with eips -g"
     mqtt:
-      publishes: []
+      publishes:
+        - edge-net/kindle/button/up
+        - edge-net/kindle/button/down
+        - edge-net/kindle/button/left
+        - edge-net/kindle/button/right
+        - edge-net/kindle/button/select
+        - edge-net/kindle/button/page_back
+        - edge-net/kindle/button/page_fwd
+        - edge-net/kindle/button/menu
+        - edge-net/kindle/button/back
+        - edge-net/kindle/button/home
       subscribes: []
     notes: >
-      Ambient output, not on the MQTT bus — polls an HTTP server that generates
-      a PNG (task state, node health, weather). Calm by default, escalates only
-      when something needs attention. Physical buttons available but unused.
+      WORKING (2026-06-22). Display shows weather, task state (Bathroom/Bedroom/Kitchen/Hallway),
+      node health. Polls Flask server (LXC CT212 at 192.168.0.62) every 5 min.
+      Button daemon ready (scripts/buttons.sh via lipc-wait-event) — publishes to
+      kindle-server HTTP bridge which forwards to MQTT. Screensaver disabled.
+      Boot persistence (startup.sh auto-run) not yet wired to init system.
 
   - id: inky
     repo: edge-net-inky
