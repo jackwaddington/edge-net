@@ -61,6 +61,48 @@ The environment should express what's going on. Not "look at your phone" — the
 
 ---
 
+### Hub Audio — Sound Output Surface
+
+**Hardware**: Pi 3A 3.5mm audio jack → small powered speaker or USB audio amp. No new node — this is an additional output surface on the existing hub.
+
+**Approach**: A subscriber service on the Pi 3A listens on `edge/hub/audio/play`. Payload determines what happens:
+
+```json
+{ "file": "chime.wav" }
+{ "tts": "Motion detected in hallway" }
+{ "volume": 70 }
+```
+
+- **`file`** — plays a WAV/MP3 from a local sounds directory (`/opt/edge-net/sounds/`). Uses `aplay` (WAV) or `mpg123` (MP3). Files are committed to the repo, deployed with the service.
+- **`tts`** — speaks a string using [Piper](https://github.com/rhasspy/piper), a local neural TTS (~60 MB model, runs offline). Falls back to `espeak` if Piper isn't installed.
+- **`volume`** — sets `amixer` master volume (0–100). Persists until changed.
+
+The service queues messages — if two arrive at once, they play in order rather than overlapping.
+
+**MQTT contract**:
+
+| Topic                  | Direction | Payload                                         |
+|------------------------|-----------|-------------------------------------------------|
+| `edge/hub/audio/play`  | sub       | `{"file":"…"}` / `{"tts":"…"}` / `{"volume":N}` |
+| `edge/hub/audio/state` | pub       | `{"status":"playing","source":"…"}` / `"idle"`  |
+
+**Use cases this enables** (all triggered by existing rule engine, no firmware changes):
+
+- Doorbell chime when a button node fires
+- Spoken alert when a sensor threshold is crossed
+- Scene audio — a sound cue when lights change mode
+- "Good morning" TTS on a schedule
+- Alarm / countdown beeps for the task tracker
+
+**Why on the hub not a Pico**: Audio needs a filesystem for sound files and a real CPU for TTS. The Pi 3A already has both. Keeps microcontrollers dumb.
+
+**Hardware open questions**:
+
+- Powered speaker (e.g. small Bluetooth speaker in aux mode, or a Pi-specific amp hat like Pimoroni Speaker pHAT)?
+- Volume level in the space — does the jack output need amplification, or is a self-powered speaker fine?
+
+---
+
 ### Relay — Switching Physical Things
 
 **Hardware**: Pi 3A + Automation Hat (already exists as edge-net-automation).
@@ -168,10 +210,18 @@ It assembles a state packet — task tracker overdue items, sensor readings, nod
 
 Open problem worth solving properly. With AI-generated device code, the deployment pipeline becomes the bottleneck.
 
-- **Linux/OpenBSD nodes** (hub, Pi Zero W, Pi 3A, Kindle): Ansible
-- **CircuitPython/MicroPython nodes** (Pico W, Plasma Stick): auto-detect USB mount, sync repo directory
+- **Linux nodes** (Pi Zero W, Pi 3A, Kindle): [Balena](https://www.balena.io/) — OTA, fleet management, remote terminal
+- **Hub** (OpenBSD): Balena doesn't support OpenBSD — Ansible or manual
+- **CircuitPython/MicroPython nodes** (Pico W, Plasma Stick): Balena doesn't support these — auto-detect USB mount, sync repo directory
 
-Goal: describe a change, generate the code, push to every relevant device in one command. This is where local LLM inference on the home network becomes genuinely useful — generate device code offline, deploy immediately.
+**Balena firewall constraint**: balenaCloud requires outbound HTTPS to `*.balena.io`. Two options:
+
+- Pass outbound through pf — only works when ethernet uplink is present, breaks standalone mode
+- Self-host [openBalena](https://open-balena.io/) on the home network — no internet dependency, fits the standalone design
+
+openBalena is the better fit here.
+
+Goal: describe a change, generate the code, push to every relevant device in one command.
 
 ### Three levels of update — prefer the lowest
 
