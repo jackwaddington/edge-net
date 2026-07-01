@@ -23,6 +23,7 @@ The system is built around a clear philosophy — **capability over device**, du
 | [edge-net-sony-dn1080](https://github.com/jackwaddington/edge-net-sony-dn1080) | Sony STR-DN1080 | Network-native AV receiver — IP control + Zone 2 multi-room |
 | [edge-net-lg-um7400](https://github.com/jackwaddington/edge-net-lg-um7400) | LG 65UM7400 (webOS) | Network-native TV — power, input, volume, apps, on-screen toasts |
 | [edge-net-samsung-frame](https://github.com/jackwaddington/edge-net-samsung-frame) | Samsung The Frame 65" QLED (2024) | Ambient art surface — push artwork, read presence + light sensors |
+| [edge-net-mcp](https://github.com/jackwaddington/edge-net-mcp) | Proxmox LXC · Node.js | MCP server — exposes edge-net nodes as tools for Claude (web + CLI) |
 
 Nodes split two ways: **firmware nodes** run our code on a microcontroller (the Pico W ones, including the HK bridge); **adapter nodes** run no code on the device — a network-native box we reach over its own IP protocol, with a small MQTT↔IP adapter elsewhere on the fabric. A node is any controllable surface worth cataloguing, not only a thing that runs our firmware.
 

@@ -14,7 +14,7 @@
 #   - state: "built" = working code; "scaffold" = partial; "stub" = README only.
 
 schema_version: 1
-updated: 2026-06-16
+updated: 2026-07-01
 
 network:
   subnet: 10.1.1.0/24
@@ -54,37 +54,42 @@ nodes:
     outputs: []
     displays: []
     mqtt: { publishes: [], subscribes: [] }
-    notes: The substrate. Every other node hangs off this.
+    notes: >
+      The substrate. Every other node hangs off this. Mosquitto binds on
+      10.1.1.1:1883 (Edge-NET WiFi) and also reachable from home network at
+      192.168.0.145:1883 (DHCP lease — may change; set static reservation if
+      needed, MAC d8:3a:dd:8e:c1:42).
 
   - id: keybow
     repo: edge-net-keybow
-    hardware: Raspberry Pi Zero W + Keybow Mini (3-key)
+    hardware: Raspberry Pi Zero W + Keybow Mini (3-key, coloured keycaps)
     os: Raspberry Pi OS (Python)
     state: built
     location: null
     network: { ip: 10.1.1.10, ip_status: leased, mac: "b8:27:eb:28:2d:8e", class: linux }
     inputs:
-      - { name: button_0, kind: button, gpio: 17, mqtt_pub: edge-net/keybow/button/0, payload: press/release }
-      - { name: button_1, kind: button, gpio: 22, mqtt_pub: edge-net/keybow/button/1, payload: press/release }
-      - { name: button_2, kind: button, gpio: 6,  mqtt_pub: edge-net/keybow/button/2, payload: press/release }
+      - { name: button_0, kind: button, gpio: 17, mqtt_pub: edge-net/keybow/button/0, payload: '{"event":"press"} / {"event":"release"}' }
+      - { name: button_1, kind: button, gpio: 22, mqtt_pub: edge-net/keybow/button/1, payload: '{"event":"press"} / {"event":"release"}' }
+      - { name: button_2, kind: button, gpio: 6,  mqtt_pub: edge-net/keybow/button/2, payload: '{"event":"press"} / {"event":"release"}' }
     outputs:
-      - { name: led_0, kind: rgb_led, driver: APA102/SPI, mqtt_sub: edge-net/keybow/led/0, payload: "r,g,b" }
-      - { name: led_1, kind: rgb_led, driver: APA102/SPI, mqtt_sub: edge-net/keybow/led/1, payload: "r,g,b" }
-      - { name: led_2, kind: rgb_led, driver: APA102/SPI, mqtt_sub: edge-net/keybow/led/2, payload: "r,g,b" }
+      - { name: led_0, kind: rgb_led, driver: APA102/SPI, mqtt_sub: edge-net/keybow/led/0, payload: '{"rgb":[r,g,b]}' }
+      - { name: led_1, kind: rgb_led, driver: APA102/SPI, mqtt_sub: edge-net/keybow/led/1, payload: '{"rgb":[r,g,b]}' }
+      - { name: led_2, kind: rgb_led, driver: APA102/SPI, mqtt_sub: edge-net/keybow/led/2, payload: '{"rgb":[r,g,b]}' }
     displays: []
     mqtt:
       publishes: [edge-net/keybow/button/0, edge-net/keybow/button/1, edge-net/keybow/button/2]
       subscribes: [edge-net/keybow/led/0, edge-net/keybow/led/1, edge-net/keybow/led/2]
     notes: >
-      Two-way per key — light a button to signal "needs attention", press
-      sends the response. Full Linux, SSH-accessible. Strongest fit for
-      logging discrete events (e.g. a button per household task).
+      Three physical coloured keycap buttons, each with its own RGB LED underneath.
+      Publishes both press AND release events. Two-way per key — light a button to
+      signal "needs attention", press sends the response. Full Linux, SSH-accessible.
+      Strongest fit for logging discrete events (e.g. a button per household task).
 
   - id: gfx
     repo: edge-net-gfx
-    hardware: Raspberry Pi Pico W + Pimoroni GFX Pack
+    hardware: Raspberry Pi Pico W + Pimoroni GFX Pack + Adafruit Mini I2C Gamepad (STEMMA QT)
     os: MicroPython
-    state: stub
+    state: scaffold
     location: null
     network: { ip: 10.1.1.20, ip_status: fixed_when_built, class: mcu }
     inputs:
@@ -106,42 +111,89 @@ nodes:
       subscribes: [edge-net/gfx/display]
     notes: >
       Five buttons + small graphical display = the interactive terminal of the
-      network. Only node firewalled through to home Grafana/Prometheus. Planned
-      apps: moped live data, chess clock, timelapse, k3s health. Topics are
-      proposed (README is a stub).
+      network. Also hosts the GamepadQT over I2C (STEMMA QT) — reads the analog
+      stick and 6 buttons and publishes them as edge-net/gamepad/* topics.
+      Only node firewalled through to home Grafana/Prometheus.
 
-  - id: plasma
+  - id: plasma-1
     repo: edge-net-plasma
     hardware: Pimoroni Plasma Stick 2040W
     os: MicroPython
-    state: future
+    state: built
     location: null
     network: { ip: null, ip_status: dynamic, class: mcu }
     inputs: []
     outputs:
       - name: led_strip
         kind: addressable_rgb
-        detail: WS2812 / NeoPixel, ~50 LEDs on GP15
-        capabilities: [solid_colour, patterns, brightness, per_pixel, foldable_to_grid_10x5]
-        mqtt_sub: edge-net/plasma/led
+        detail: WS2812 / NeoPixel, 50 LEDs on GP15
+        capabilities: [solid_colour, per_pixel_frame, named_animations, foldable_to_grid_10x5]
+        mqtt_sub: edge-net/gamepad/frame
     displays: []
     mqtt:
       publishes: []
-      subscribes: [edge-net/plasma/led]
+      subscribes:
+        - edge-net/gamepad/frame
+        - edge-net/gamepad/led
+        - edge-net/gamepad/led/clear
+        - edge-net/gamepad/animate
     notes: >
-      FUTURE — second Plasma Stick (spare). For now the active LED strip lives
-      on the gamepad board (dual role). Stand this up as a standalone ambient
-      node only when a second independent strip is wanted. 50-LED strip can fold
-      to a 10x5 pixel grid for text.
+      Subscribes to shared gamepad topics so GFX drives both strips simultaneously
+      as one broadcast. Designed for hard-to-reach places: single USB cable,
+      WiFi-only, no SSH. WebREPL not enabled — physical access needed for firmware updates.
+
+  - id: plasma-2
+    repo: edge-net-plasma
+    hardware: Pimoroni Plasma Stick 2040W
+    os: MicroPython
+    state: built
+    location: null
+    network: { ip: null, ip_status: dynamic, class: mcu, device_id: "2" }
+    inputs: []
+    outputs:
+      - name: led_strip
+        kind: addressable_rgb
+        detail: WS2812 / NeoPixel, 50 LEDs on GP15
+        capabilities: [solid_colour, per_pixel_frame, named_animations, foldable_to_grid_10x5]
+    displays: []
+    mqtt:
+      publishes: []
+      subscribes:
+        - edge-net/gamepad/frame
+        - edge-net/gamepad/led
+        - edge-net/gamepad/led/clear
+        - edge-net/gamepad/animate
+        - edge-net/plasma/2/frame
+        - edge-net/plasma/2/led
+        - edge-net/plasma/2/led/clear
+        - edge-net/plasma/2/animate
+    topic_detail:
+      - { topic: "edge-net/plasma/2/animate", dir: subscribe, payload: '"rainbow [speed]" | "fire" | "fade HEX,HEX" | "flash HEX,HEX" | "off"' }
+      - { topic: "edge-net/plasma/2/led",     dir: subscribe, payload: '"r,g,b" — solid fill, stops animation' }
+      - { topic: "edge-net/plasma/2/led/clear", dir: subscribe, payload: 'any — strip off' }
+      - { topic: "edge-net/plasma/2/frame",   dir: subscribe, payload: 'hex string, 6 chars/pixel RRGGBB, up to 50 pixels' }
+    mcp_interface:
+      status: code in repo (edge-net-plasma main.py), NOT YET FLASHED
+      command_topic: edge-net/plasma/cmd
+      state_topic: edge-net/plasma/state
+      ack_topic: edge-net/plasma/ack
+      command_payload: '{"action":"set_led_pattern","pattern":"solid|pulse|rainbow|fire|fade|flash|off","color":"#rrggbb","correlationId":"uuid"}'
+      state_payload: '{"pattern":"...","color":"..."}  # retained'
+      ack_payload: '{"correlationId":"...","ok":true}'
+    notes: >
+      Also subscribes to shared gamepad/* topics (same as plasma-1). Per-device topics
+      use DEVICE_ID "2". MCP command interface written and in repo — needs one physical
+      flash to activate. WebREPL not enabled — enable on next physical access to allow
+      wireless updates thereafter.
 
   - id: gamepad
     repo: edge-net-gamepad
-    hardware: Adafruit Mini I2C Gamepad (seesaw) on Plasma Stick 2040W host
-    os: CircuitPython
+    hardware: Adafruit Mini I2C Gamepad (seesaw) on GFX Pack host (Pi Pico W + Pimoroni GFX Pack)
+    os: MicroPython
     state: scaffold
     location: null
     network: { ip: null, ip_status: dynamic, class: mcu }
-    host_board: Plasma Stick 2040W (Pico W) — provides WiFi, CPU, and the LED strip
+    host_board: GFX Pack / Pi Pico W — reads gamepad over I2C (STEMMA QT), publishes over WiFi
     inputs:
       - { name: button_a,      kind: button,   seesaw_pin: 5,  mqtt_pub: edge-net/gamepad/button/a,      payload: press/release }
       - { name: button_b,      kind: button,   seesaw_pin: 1,  mqtt_pub: edge-net/gamepad/button/b,      payload: press/release }
@@ -176,14 +228,14 @@ nodes:
     repo: edge-net-automation
     hardware: Raspberry Pi 3A + Pimoroni Automation Hat
     os: Raspberry Pi OS (Python)
-    state: stub
+    state: built
     location: null
     network: { ip: 10.1.1.11, ip_status: fixed_when_built, class: linux }
     inputs:
-      - { name: adc_1, kind: adc, detail: "12-bit, 0-24V" }
-      - { name: adc_2, kind: adc, detail: "12-bit, 0-24V" }
-      - { name: adc_3, kind: adc, detail: "12-bit, 0-24V" }
-      - { name: adc_lv, kind: adc, detail: "12-bit, 0-3.3V" }
+      - { name: adc_1, kind: adc, detail: "12-bit, 0-24V", mqtt_pub: edge-net/automation/adc/1 }
+      - { name: adc_2, kind: adc, detail: "12-bit, 0-24V", mqtt_pub: edge-net/automation/adc/2 }
+      - { name: adc_3, kind: adc, detail: "12-bit, 0-24V", mqtt_pub: edge-net/automation/adc/3 }
+      - { name: adc_lv, kind: adc, detail: "12-bit, 0-3.3V", mqtt_pub: edge-net/automation/adc/lv }
       - { name: input_1, kind: buffered_input, detail: "24V tolerant" }
       - { name: input_2, kind: buffered_input, detail: "24V tolerant" }
       - { name: input_3, kind: buffered_input, detail: "24V tolerant" }
@@ -194,15 +246,31 @@ nodes:
       - { name: sink_1, kind: sinking_output, detail: "24V tolerant" }
       - { name: sink_2, kind: sinking_output, detail: "24V tolerant" }
       - { name: sink_3, kind: sinking_output, detail: "24V tolerant" }
+      - name: audio
+        kind: audio_out
+        detail: "3.5mm jack on Pi 3A — plays WAV files and TTS via espeak"
+        mqtt_sub: edge/hub/audio/play
     displays:
       - { name: channel_leds, kind: indicator_leds, detail: "15 channel + power/comms/warn" }
     mqtt:
-      publishes: []
-      subscribes: [edge-net/automation/relay/1, edge-net/automation/relay/2, edge-net/automation/relay/3]
+      publishes:
+        - edge-net/automation/status
+        - edge-net/automation/adc/1
+        - edge-net/automation/adc/2
+        - edge-net/automation/adc/3
+        - edge/hub/audio/state
+      subscribes:
+        - edge-net/automation/relay/1
+        - edge-net/automation/relay/2
+        - edge-net/automation/relay/3
+        - edge/hub/audio/play
     notes: >
-      Richest physical IO, least built. Switches mains/low-voltage loads.
-      Also orchestrates graceful shutdown: SSH into a node, halt, cut power
-      via relay. Topics proposed.
+      The rules engine and audio node of the network. Runs the generalised
+      rule engine (subscribes to button events, drives outputs), audio service
+      (edge/hub/audio/play → WAV or TTS via espeak), and task tracker service.
+      ADC channels publish bare numbers (high-rate telemetry). Relay commands
+      are retained JSON. Audio play topic accepts {"file":"chime.wav"},
+      {"tts":"text"}, or {"volume":70}.
 
   - id: kindle
     repo: edge-net-kindle
@@ -268,28 +336,151 @@ nodes:
       not live motion. Keep firmware a dumb image/spec sink to avoid reflashing
       on every layout change. Topics proposed.
 
+  - id: sony-avr
+    repo: edge-net-sony-dn1080
+    hardware: Sony STR-DN1080 AV receiver (network-native, Audio Control API on port 10000)
+    os: "n/a — adapter runs as LXC CT 210 on pve1 (192.168.0.60), Python"
+    state: built
+    location: null
+    network: { ip: 192.168.0.6, ip_status: dynamic, class: home_network }
+    inputs: []
+    outputs:
+      - { name: avr, kind: av_receiver, detail: "power, input, volume, mute, surround" }
+    displays: []
+    mqtt:
+      publishes: [edge-net/avr/state]
+      subscribes: [edge-net/avr/power, edge-net/avr/input, edge-net/avr/volume, edge-net/avr/mute, edge-net/avr/sound]
+    topic_detail:
+      - { topic: "edge-net/avr/power",  dir: subscribe, payload: '{"state":"on"|"off"}' }
+      - { topic: "edge-net/avr/input",  dir: subscribe, payload: '{"source":"bd-dvd"|"game"|"tv"|...}' }
+      - { topic: "edge-net/avr/volume", dir: subscribe, payload: '{"level":42} or "up"/"down"' }
+      - { topic: "edge-net/avr/mute",   dir: subscribe, payload: '"on"|"off"|"toggle"' }
+      - { topic: "edge-net/avr/sound",  dir: subscribe, payload: '"dolby-surround"|"multi-stereo"|...' }
+      - { topic: "edge-net/avr/state",  dir: publish,   payload: '{"power":"...","source":"...","volume":n,"mute":bool}', retained: true }
+    notes: >
+      Network-native AVR — adapter polls the Audio Control API every 5s and publishes
+      retained state. Earns /state because the API pushes real notifications (user
+      picks up remote, front panel → adapter sees it). When both AVRs run at once
+      use edge-net/avr/sony/* to address this unit specifically.
+
+  - id: hk-avr
+    repo: edge-net-hk-avr365
+    hardware: "Harman Kardon AVR 365 (RS-232 only) + Pi Pico W bridge + MAX3232 level shifter"
+    os: MicroPython
+    state: scaffold
+    location: null
+    network: { ip: null, ip_status: dynamic, class: mcu }
+    inputs: []
+    outputs:
+      - { name: avr, kind: av_receiver, detail: "power, input, volume, mute, surround via RS-232" }
+    displays: []
+    mqtt:
+      publishes: [edge-net/avr/status]
+      subscribes: [edge-net/avr/power, edge-net/avr/input, edge-net/avr/volume, edge-net/avr/mute, edge-net/avr/sound]
+    topic_detail:
+      - { topic: "edge-net/avr/power",  dir: subscribe, payload: '"on"|"off"' }
+      - { topic: "edge-net/avr/input",  dir: subscribe, payload: '"dvd"|"vid1"|"cd"|...' }
+      - { topic: "edge-net/avr/volume", dir: subscribe, payload: '"up"|"down"' }
+      - { topic: "edge-net/avr/mute",   dir: subscribe, payload: '"on"|"off"|"toggle"' }
+      - { topic: "edge-net/avr/sound",  dir: subscribe, payload: 'surround mode string' }
+      - { topic: "edge-net/avr/status", dir: publish,   payload: 'LWT online/offline' }
+    notes: >
+      No network on the AVR itself — Pico W is the bridge, translating MQTT commands
+      to RS-232 (38400 baud 8N1, PCSEND protocol). Pico powered from AVR front USB.
+      Scaffold — protocol documented in CONTROLS.md, hardware (Pico W + MAX3232) to
+      source, firmware not yet written. When both AVRs run use edge-net/avr/hk/* to
+      address this unit specifically.
+
+  - id: lg-tv
+    repo: edge-net-lg-um7400
+    hardware: LG UM7400 TV (webOS, SSAP WebSocket API + Wake-on-LAN)
+    os: "n/a — adapter on home network"
+    state: scaffold
+    location: null
+    network: { ip: dynamic, ip_status: dynamic, class: home_network }
+    inputs: []
+    outputs:
+      - { name: tv, kind: display_and_audio, detail: "power, input, volume, app launch, remote key injection, on-screen toast" }
+    displays:
+      - { name: screen, kind: tv_display, detail: "HDMI switching, app launcher, webOS" }
+    mqtt:
+      publishes: [edge-net/tv/state]
+      subscribes: [edge-net/tv/power, edge-net/tv/input, edge-net/tv/volume, edge-net/tv/app, edge-net/tv/key, edge-net/tv/notify]
+    topic_detail:
+      - { topic: "edge-net/tv/power",  dir: subscribe, payload: '"on" (WoL) | "off" (SSAP)' }
+      - { topic: "edge-net/tv/input",  dir: subscribe, payload: 'source or HDMI id' }
+      - { topic: "edge-net/tv/volume", dir: subscribe, payload: '{"level":n} | "up"/"down"/"mute"' }
+      - { topic: "edge-net/tv/app",    dir: subscribe, payload: '"netflix"|"youtube"|...' }
+      - { topic: "edge-net/tv/key",    dir: subscribe, payload: 'remote key name (nav, play/pause, ...)' }
+      - { topic: "edge-net/tv/notify", dir: subscribe, payload: 'text string → on-screen toast' }
+      - { topic: "edge-net/tv/state",  dir: publish,   payload: '{"power":"...","input":"...","volume":n,"app":"..."}', retained: true }
+    notes: >
+      Earns /state — SSAP subscriptions report real changes (input, volume, app).
+      Power-on needs Wake-on-LAN; power-off via SSAP. Scaffold — adapter not yet
+      written; API and topic shape documented.
+
+  - id: edge-net-mcp
+    repo: edge-net-mcp
+    hardware: Proxmox LXC CT219 on pve1 (192.168.0.69)
+    os: Node.js / MicroPython SDK
+    state: built — deployed via terraform, NOT YET running (terraform apply pending)
+    location: homelab (pve1)
+    network: { ip: 192.168.0.69, port: 9583, class: homelab_service }
+    role: >
+      MCP server exposing edge-net nodes as tools for Claude (web or CLI).
+      Bridges the MQTT fabric to the MCP protocol over Streamable HTTP.
+      Add https://edge-net-mcp.jackwaddington.com/mcp to Claude.ai Settings → Integrations.
+    tools:
+      - { name: list_nodes,      description: "List all exposed nodes, hardware, and risk tier" }
+      - { name: get_node_state,  description: "Read last-known retained MQTT state for a node" }
+      - { name: set_display,     description: "Set text or named screen on gfx or samsung-frame" }
+      - { name: set_led_pattern, description: "Set LED colour/pattern on plasma" }
+      - { name: av_control,      description: "Power/input/volume on hk-avr365, sony-dn1080, lg-um7400" }
+    env:
+      EDGE_NET_MQTT_URL: mqtt://192.168.0.145:1883
+      EDGE_NET_MCP_PORT: 9583
+      EDGE_NET_MCP_MAX_RISK: safe  # "guarded" nodes (automation relay) not exposed
+    deploy:
+      - terraform apply -target=module.edge_net_mcp -target=cloudflare_record.edge_net_mcp
+      - Add Cloudflare Zero Trust public hostname: edge-net-mcp.jackwaddington.com → http://192.168.0.69:9583
+      - Add URL to Claude.ai Settings → Integrations
+    notes: >
+      Starts in degraded mode if MQTT unreachable at boot (tools return {known:false},
+      reconnects in background). Risk tiers gate exposure — guarded nodes need a
+      confirm-gate tool before being wired. See edge-net-mcp repo for full details.
+
 # ── Interaction primitives (for the brainstorm agent) ─────────────────────────
 # Distilled "what can this network actually do" without a phone or screen:
 interaction_primitives:
   discrete_input:
-    - "3 Keybow buttons (with per-button RGB feedback)"
-    - "6 gamepad buttons"
-    - "5 GFX buttons"
-    - "Kindle d-pad + page-turn (unused)"
-    - "3 Automation Hat buffered inputs (e.g. reed switch on a cupboard)"
+    - "3 Keybow buttons (coloured keycaps, per-button RGB LED, publishes press + release)"
+    - "6 Gamepad buttons (A/B/X/Y + start/select, publishes press + release)"
+    - "5 GFX buttons (A/B/C/D + back/home, publishes press + release)"
+    - "3 Inky buttons (A/B/C alongside e-ink panel, publishes press + release)"
+    - "Kindle d-pad + page-turn + menu/back/home (publishes press)"
+    - "3 Automation Hat buffered inputs (24V tolerant — reed switch, door sensor, etc.)"
   continuous_input:
-    - "gamepad analog joystick (2 axes)"
-    - "4 Automation Hat ADC channels (sensors, dials)"
+    - "Gamepad analog joystick (2 axes, 0-1023, 80-unit deadzone)"
+    - "3 Automation Hat ADC channels (12-bit, 0-24V) + 1 low-voltage channel (0-3.3V)"
   ambient_output:
-    - "50-LED RGB strip (plasma/gamepad) — colour, pattern, or 10x5 text grid"
-    - "3 Keybow RGB LEDs — per-task status lights"
+    - "50-LED RGB strip plasma-1 (edge-net/gamepad/frame) — dumb framebuffer, 10x5 grid"
+    - "50-LED RGB strip plasma-2 (edge-net/plasma/frame) — identical hardware, independent"
+    - "3 Keybow RGB LEDs — per-task status lights (retained)"
     - "GFX RGB backlight — room-glance colour"
     - "15 Automation Hat channel LEDs"
   rich_output:
-    - "GFX 128x64 LCD — graphs, menus, live data"
-    - "Kindle 600x800 e-ink — calm ambient dashboard"
+    - "GFX 128x64 LCD — graphs, menus, live data (edge-net/gfx/display)"
+    - "Inky 296x128 mono e-ink — ambient display, low power (edge-net/inky/display)"
+    - "Kindle 600x800 e-ink — calm ambient dashboard (polls HTTP, not MQTT)"
+    - "LG TV screen — input switch, app launch, toast notifications (edge-net/tv/*)"
+  audio_output:
+    - "Pi 3A 3.5mm jack — WAV files or TTS via espeak (edge/hub/audio/play)"
+    - "Sony AVR speaker output — controlled via edge-net/avr/* (network-native)"
+    - "HK AVR speaker output — same topics, RS-232 bridge (scaffold)"
   physical_actuation:
-    - "3 Automation Hat relays (24V @ 2A) — switch a lamp, fan, socket, latch"
+    - "3 Automation Hat relays (24V @ 2A, NC+NO) — switch a lamp, fan, socket, latch"
+    - "Sony AVR power/input/volume — full two-way (edge-net/avr/*)"
+    - "HK AVR power/input/volume — same vocabulary, serial bridge (scaffold)"
   data_sinks:
     - "Postgres on home network (via uplink) — log events, timestamps"
     - "Grafana/Prometheus (GFX can read back)"
